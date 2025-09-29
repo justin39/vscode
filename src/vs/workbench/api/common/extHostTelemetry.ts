@@ -29,6 +29,7 @@ export class ExtHostTelemetry extends Disposable implements ExtHostTelemetryShap
 	readonly onDidChangeTelemetryConfiguration: Event<vscode.TelemetryConfiguration> = this._onDidChangeTelemetryConfiguration.event;
 
 	private _productConfig: { usage: boolean; error: boolean } = { usage: true, error: true };
+	private _isTelemetrySupported: boolean = false;
 	private _level: TelemetryLevel = TelemetryLevel.NONE;
 	private _oldTelemetryEnablement: boolean | undefined;
 	private readonly _inLoggingOnlyMode: boolean = false;
@@ -80,7 +81,12 @@ export class ExtHostTelemetry extends Disposable implements ExtHostTelemetryShap
 	}
 
 	$initializeTelemetryLevel(level: TelemetryLevel, supportsTelemetry: boolean, productConfig?: { usage: boolean; error: boolean }): void {
-		this._level = level;
+		this._isTelemetrySupported = supportsTelemetry;
+		if (this._isTelemetrySupported) {
+			this._level = level;
+		} else {
+			this._level = TelemetryLevel.NONE;
+		}
 		this._productConfig = productConfig ?? { usage: true, error: true };
 	}
 
@@ -117,6 +123,9 @@ export class ExtHostTelemetry extends Disposable implements ExtHostTelemetryShap
 	}
 
 	$onDidChangeTelemetryLevel(level: TelemetryLevel): void {
+		if (!this._isTelemetrySupported) {
+			level = TelemetryLevel.NONE;
+		}
 		this._oldTelemetryEnablement = this.getTelemetryConfiguration();
 		this._level = level;
 		const telemetryDetails = this.getTelemetryDetails();

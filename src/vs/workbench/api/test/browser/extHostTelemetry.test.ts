@@ -292,4 +292,22 @@ suite('ExtHostTelemetry', function () {
 		assert.strictEqual(loggerService.createLogger().logs.length, 1);
 		assert.ok(loggerService.createLogger().logs[0].startsWith('test-extension/test-event'));
 	});
+
+	test('Ensure telemetry is disabled when not supported', function () {
+		const extensionTelemetry = createExtHostTelemetry();
+
+		// Initialize with supportsTelemetry: false, and a level that would otherwise be enabled
+		extensionTelemetry.$initializeTelemetryLevel(TelemetryLevel.USAGE, false);
+		let config = extensionTelemetry.getTelemetryDetails();
+		assert.strictEqual(config.isUsageEnabled, false, 'Usage should be disabled');
+		assert.strictEqual(config.isErrorsEnabled, false, 'Errors should be disabled');
+		assert.strictEqual(config.isCrashEnabled, false, 'Crash should be disabled');
+
+		// Try to change the level, it should remain disabled
+		extensionTelemetry.$onDidChangeTelemetryLevel(TelemetryLevel.USAGE);
+		config = extensionTelemetry.getTelemetryDetails();
+		assert.strictEqual(config.isUsageEnabled, false, 'Usage should still be disabled');
+		assert.strictEqual(config.isErrorsEnabled, false, 'Errors should still be disabled');
+		assert.strictEqual(config.isCrashEnabled, false, 'Crash should still be disabled');
+	});
 });

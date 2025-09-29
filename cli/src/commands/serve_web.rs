@@ -814,6 +814,10 @@ impl ConnectionManager {
 			cmd.arg(ct);
 		}
 
+		if args.args.disable_telemetry {
+			cmd.arg("--disable-telemetry");
+		}
+
 		// removed, otherwise the workbench will not be usable when running the CLI from sources.
 		cmd.env_remove("VSCODE_DEV");
 

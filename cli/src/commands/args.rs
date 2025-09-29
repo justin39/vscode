@@ -219,6 +219,9 @@ pub struct ServeWebArgs {
 	/// Use a specific commit SHA for the client.
 	#[clap(long)]
 	pub commit_id: Option<String>,
+	/// Disables telemetry for the server.
+	#[clap(long)]
+	pub disable_telemetry: bool,
 }
 
 #[derive(Args, Debug, Clone)]
