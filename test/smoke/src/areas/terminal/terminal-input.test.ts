@@ -3,7 +3,8 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Application, Terminal, SettingsEditor } from '../../../../automation';
+import { expect } from '@playwright/test';
+import { Application, Terminal, SettingsEditor, TerminalCommandIdWithValue } from '../../../../automation';
 import { setTerminalTestSettings } from './terminal-helpers';
 
 export function setup(options?: { skipSuite: boolean }) {
@@ -21,6 +22,36 @@ export function setup(options?: { skipSuite: boolean }) {
 
 		after(async function () {
 			await settingsEditor.clearUserSettings();
+		});
+
+		it('should paste an OSC 52 copy outside the web terminal', async function () {
+			const app = this.app as Application;
+			const { currentPage: page, browserContext } = app.code.driver;
+			if (!app.web || browserContext.browser()?.browserType().name() !== 'chromium') {
+				this.skip();
+			}
+
+			await terminal.createTerminal();
+			const text = 'copied from the terminal';
+			const payload = Buffer.from(text).toString('base64');
+			await browserContext.grantPermissions(['clipboard-write'], { origin: new URL(page.url()).origin });
+			try {
+				await page.evaluate(() => navigator.clipboard.writeText('previous clipboard contents'));
+				await terminal.runCommandWithValue(TerminalCommandIdWithValue.WriteDataToTerminal, `\\x1b]52;c;${payload}\\x07OSC52 complete`);
+				await terminal.waitForTerminalText(lines => lines.some(line => line.includes('OSC52 complete')));
+
+				const pastePage = await browserContext.newPage();
+				try {
+					await pastePage.setContent('<textarea></textarea>');
+					const input = pastePage.locator('textarea');
+					await input.press('ControlOrMeta+v');
+					await expect(input).toHaveValue(text);
+				} finally {
+					await pastePage.close();
+				}
+			} finally {
+				await browserContext.clearPermissions();
+			}
 		});
 
 		describe('Auto replies', function () {
